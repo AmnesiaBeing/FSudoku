@@ -1,16 +1,12 @@
-# fsudoku
+# FSUDOKU
 
-A new Flutter project.
+一个由Flutter制作的数独游戏，做起来挺费脑筋的。
 
-## Getting Started
+## 界面截图
 
-This project is a starting point for a Flutter application.
+显示的数字是随机产生的，目前还没有实装数独生成算法。
 
-A few resources to get you started if this is your first Flutter project:
+不要在意颜色，是在不会配色。
 
-- [Lab: Write your first Flutter app](https://flutter.dev/docs/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://flutter.dev/docs/cookbook)
+<img src="./image/Screenshot.com.example.fsudoku.jpg" style="zoom:25%;" />
 
-For help getting started with Flutter, view our
-[online documentation](https://flutter.dev/docs), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
