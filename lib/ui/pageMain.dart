@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:fsudoku/model/modelSudoku.dart';
+import 'package:fsudoku/model/modelSudokuBoard.dart';
 import 'package:fsudoku/widget/widgetBoard.dart';
 import 'package:fsudoku/widget/widgetKeypad.dart';
-import 'package:provider/provider.dart';
 
 const double AppBarHeight = 48;
 
@@ -53,13 +52,11 @@ class SudokuPage extends StatelessWidget {
       // 这个啥情况下都得有
       mainWidgets.add(Spacer());
       mainWidgets.add(Center(
-          child: ChangeNotifierProvider<SudokuBoardViewModel>.value(
-              value: _board,
-              child: SudokuBoard(
-                board: _board,
-                cellWidth: cellWidth,
-                textScaleFactor: textScaleFactor,
-              ))));
+          child: SudokuBoard(
+        board: _board,
+        cellWidth: cellWidth,
+        textScaleFactor: textScaleFactor,
+      )));
       mainWidgets.add(Spacer());
 
       mainWidgets.add(Divider());
@@ -70,25 +67,21 @@ class SudokuPage extends StatelessWidget {
           IconButton(icon: Icon(Icons.redo), onPressed: _handleRedo),
           IconButton(
               icon: Icon(Icons.lightbulb_outline), onPressed: _handleTips),
-          ChangeNotifierProvider<SudokuBoardViewModel>.value(
-              value: _board,
-              child: SudokuKeypad(
-                board: _board,
-                cellWidth: cellWidth,
-                textScaleFactor: textScaleFactor,
-              )),
+          SudokuKeypad(
+            board: _board,
+            cellWidth: cellWidth,
+            textScaleFactor: textScaleFactor,
+          ),
           IconButton(icon: Icon(Icons.file_upload), onPressed: _handleSave),
           IconButton(icon: Icon(Icons.file_download), onPressed: _handleLoad)
         ]));
       } else if (size.height >= size.width + AppBarHeight + cellWidth) {
         // 屏幕还行，键盘呈一行放置
-        mainWidgets.add(ChangeNotifierProvider<SudokuBoardViewModel>.value(
-            value: _board,
-            child: SudokuKeypad(
-              board: _board,
-              cellWidth: cellWidth,
-              textScaleFactor: textScaleFactor,
-            )));
+        mainWidgets.add(SudokuKeypad(
+          board: _board,
+          cellWidth: cellWidth,
+          textScaleFactor: textScaleFactor,
+        ));
         mainWidgets.add(
             Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
           IconButton(icon: Icon(Icons.redo), onPressed: _handleRedo),

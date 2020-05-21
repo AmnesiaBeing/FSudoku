@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:fsudoku/model/modelSudoku.dart';
+import 'package:fsudoku/model/modelSudokuBoard.dart';
 
 import 'widgetCell.dart';
 
@@ -45,6 +45,8 @@ class SudokuBoard extends StatelessWidget {
                                       children: List<Widget>.generate(3, (l) {
                                         int index = i * 27 + k * 9 + j * 3 + l;
                                         return SudokuCell(
+                                          GlobalKey<SudokuCellState>(),
+                                          board: board,
                                           cell: board.cells[index],
                                           cellWidth: cellWidth,
                                         );

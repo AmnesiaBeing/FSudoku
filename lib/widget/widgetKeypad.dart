@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:fsudoku/model/modelSudoku.dart';
+import 'package:fsudoku/model/modelSudokuBoard.dart';
 
 // 形态：竖向，横向，九宫格
 enum SudokuKeypadStyle { Vertical, Horizontal, Block }
