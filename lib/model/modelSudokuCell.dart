@@ -16,16 +16,7 @@ const Difficult_Default = Difficult_VeryVeryHard;
 
 // 一个单元格，内部可以有9个候选数字
 class SudokuCellViewModel {
-  // 不会起名
-  SudokuCellViewModel.fromWhat(SudokuBoardViewModel parent,
-      {bool isFixed = false}) {
-    this.isFixed = isFixed;
-    this.board = parent;
-  }
-
-  SudokuCellViewModel.fromNumber(SudokuBoardViewModel parent, int number,
-      {bool isFixed = true}) {
-    this.isFixed = isFixed;
+  SudokuCellViewModel(SudokuBoardViewModel parent) {
     this.board = parent;
   }
 
@@ -65,6 +56,7 @@ class SudokuCellViewModel {
     else {
       candidateNumbers[n - 1] = true;
       List<int> tmp = _countCandidateNumbers();
+
       if (tmp.length == 1) {
         // TODO:追加设置，候选数字不自动成为填写的数字
         _number = n;
@@ -89,7 +81,7 @@ class SudokuCellViewModel {
   }
 
   // 单元格是否是已知数
-  bool isFixed;
+  bool isFixed = false;
   // 在数独中的坐标 0-8
   int rowInBoard = Index_Invalid;
   int colInBoard = Index_Invalid;
@@ -106,11 +98,22 @@ class SudokuCellViewModel {
     board.handleHover(this);
   }
 
+  // 通知对应的widget刷新一哈
   void notifyRefresh() {
     key.currentState.refresh();
   }
 
+  // widget创建时，把globalkey跟model说一下，以后跟你说点啥你要听见。
   void registerWidgetKey(GlobalKey<SudokuCellState> key) {
     this.key = key;
+  }
+
+  // 抛弃妄想，规定目标
+  void setNumber(int number, bool isFixed) {
+    this.candidateNumbers.forEach((element) {
+      element = false;
+    });
+    this._number = number;
+    this.isFixed = isFixed;
   }
 }

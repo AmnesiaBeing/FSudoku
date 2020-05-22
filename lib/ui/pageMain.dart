@@ -1,26 +1,38 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:fsudoku/model/modelSudokuBoard.dart';
 import 'package:fsudoku/widget/widgetBoard.dart';
 import 'package:fsudoku/widget/widgetKeypad.dart';
+import 'package:fsudoku/widget/widgetToggleIconButton.dart';
 
 const double AppBarHeight = 48;
 
 class SudokuPage extends StatelessWidget {
   final SudokuBoardViewModel _board = SudokuBoardViewModel();
 
+  final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
+
   // 标题栏，当没有工具栏的时候，标题栏右上角给一个三点按钮，显示下拉菜单
-  Widget _buildAppBar(String title) {
+  Widget _buildAppBar(BuildContext context, String title) {
     return PreferredSize(
         preferredSize: Size.fromHeight(AppBarHeight),
         child: AppBar(
           title: Text(title),
           actions: <Widget>[
             IconButton(
+              icon: Icon(Icons.add),
+              onPressed: () {},
+            ),
+            IconButton(
                 icon: Icon(Icons.share),
                 onPressed: () {
-                  _handleShare();
+                  _handleShare(context);
                 }),
-            IconButton(icon: Icon(Icons.settings), onPressed: () {}),
+            IconButton(
+                icon: Icon(Icons.settings),
+                onPressed: () {
+                  Navigator.pushNamed(context, '/preferences');
+                }),
             // TODO：下拉菜单
           ],
         ));
@@ -68,12 +80,19 @@ class SudokuPage extends StatelessWidget {
           IconButton(
               icon: Icon(Icons.lightbulb_outline), onPressed: _handleTips),
           SudokuKeypad(
+            key: GlobalKey<SudokuKeypadState>(),
             board: _board,
             cellWidth: cellWidth,
             textScaleFactor: textScaleFactor,
           ),
-          IconButton(icon: Icon(Icons.file_upload), onPressed: _handleSave),
-          IconButton(icon: Icon(Icons.file_download), onPressed: _handleLoad)
+          IconButton(icon: Icon(Icons.bubble_chart), onPressed: _handleSolve),
+          ToggleIconButton(
+            iconT: Icon(Icons.file_upload),
+            iconF: Icon(Icons.file_download),
+            onPressed: (bool tf) {
+              tf ? _handleSave() : _handleLoad();
+            },
+          ),
         ]));
       } else if (size.height >= size.width + AppBarHeight + cellWidth) {
         // 屏幕还行，键盘呈一行放置
@@ -114,15 +133,20 @@ class SudokuPage extends StatelessWidget {
     }
 
     return Scaffold(
+        key: _scaffoldKey,
         // 标题栏，俩按钮
-        appBar: hasAppbar ? _buildAppBar(_title) : null,
+        appBar: hasAppbar ? _buildAppBar(context, _title) : null,
         // 竖屏的时候，最上面是新数独什么的，各种难度的选项，然后是撤销，模式，提示，草稿（读写）
         body: main);
   }
 
-  void _handleShare() {
-    // TODO: 将下面的内容复制到剪贴板并显示提示“分享成功”
-    // _board.toString();
+  final SnackBar sb = SnackBar(
+    content: Text('Content has already copied to clipboard.'),
+  );
+
+  void _handleShare(BuildContext context) {
+    Clipboard.setData(ClipboardData(text: _board.toString()));
+    _scaffoldKey.currentState.showSnackBar(sb);
   }
 
   void _handleSave() {}
@@ -130,6 +154,8 @@ class SudokuPage extends StatelessWidget {
   void _handleLoad() {}
 
   void _handleTips() {}
+
+  void _handleSolve() {}
 
   void _handleRedo() {}
 }

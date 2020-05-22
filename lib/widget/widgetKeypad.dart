@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fsudoku/model/modelSudokuBoard.dart';
+import 'package:fsudoku/model/modelSudokuCell.dart';
 
 // 形态：竖向，横向，九宫格
 enum SudokuKeypadStyle { Vertical, Horizontal, Block }
@@ -10,18 +11,23 @@ class SudokuKeypad extends StatefulWidget {
   final double cellWidth;
   final double textScaleFactor;
 
+  final Key key;
+
   SudokuKeypad(
-      {Key key,
+      {this.key,
       this.cellWidth = 32,
       this.textScaleFactor = 1,
-      @required this.board})
-      : super(key: key);
+      @required this.board}) {
+    board.keypadKey = this.key;
+  }
 
   @override
-  _SudokuKeypadState createState() => _SudokuKeypadState();
+  SudokuKeypadState createState() => SudokuKeypadState();
 }
 
-class _SudokuKeypadState extends State<SudokuKeypad> {
+class SudokuKeypadState extends State<SudokuKeypad> {
+  SudokuCellViewModel _focusedCell;
+
   @override
   Widget build(BuildContext context) {
     List<Widget> lc = List<Widget>();
@@ -30,27 +36,23 @@ class _SudokuKeypadState extends State<SudokuKeypad> {
       List<Widget> lr = List<Widget>();
       for (int j = 0; j < 3; j++) {
         int cur = i * 3 + j + 1;
+        bool v = _isCellContainsNumber(cur);
         lr.add(Container(
           margin: EdgeInsets.all(1),
           width: widget.cellWidth,
           height: widget.cellWidth,
-          // color: _isCellContainsNumber(widget.focusedCell, cur)
-          //     ? Theme.of(context).accentColor
-          //     : Theme.of(context).disabledColor,
+          color: v ? Colors.black : Colors.white,
           child: InkWell(
               child: Center(
                   child: Text(
                 cur.toString(),
                 textScaleFactor: widget.textScaleFactor,
                 style: TextStyle(
-                    // color: _isCellContainsNumber(widget.focusedCell, cur)
-                    //     ? Theme.of(context).textSelectionColor
-                    //     : Theme.of(context).textSelectionColor,
-                    fontSize: 20),
+                    color: v ? Colors.white : Colors.black, fontSize: 20),
               )),
               onTap: () {
                 // if (widget.focusedCell != null && !widget.focusedCell.isFixed) {
-                  // widget.focusedCell.toggleCandidateNumber(cur);
+                // widget.focusedCell.toggleCandidateNumber(cur);
                 // }
                 // widget.onFocusedCellChanged(widget.focusedCell);
               }),
@@ -77,8 +79,15 @@ class _SudokuKeypadState extends State<SudokuKeypad> {
         ));
   }
 
-  // bool _isCellContainsNumber(Cell cell, int number) {
-  //   return (cell != null) &&
-  // (cell.numbers[number - 1] || cell.number == number);
-  // }
+  void setFocusedCell(SudokuCellViewModel cell) {
+    setState(() {
+      _focusedCell = cell;
+    });
+  }
+
+  bool _isCellContainsNumber(int number) {
+    return (_focusedCell != null) &&
+        (_focusedCell.candidateNumbers[number - 1] ||
+            _focusedCell.number == number);
+  }
 }
