@@ -3,22 +3,29 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:fsudoku/model/modelSudokuCell.dart';
 import 'package:fsudoku/widget/widgetKeypad.dart';
+import 'package:preferences/preferences.dart';
+
+enum SudokuKeypadMode {
+  /* 草稿模式 */ Draft,
+  /* 直接填写一个数字 */ Fill,
+}
 
 // 所有数据都在这里啦
+
 class SudokuBoardViewModel {
-  // 据了解，dart里一切皆对象，（可以理解为指针？）
-  // 所有格子
   List<SudokuCellViewModel> cells;
+  // 据了解，dart里一切皆对象，（可以理解为指针？）
   // 原始数据
   List<int> raw;
   List<int> rawWithAnswer;
   // 用于存档功能
-  List<int> cellsBakup;
+  List<Cell> cellsBakup;
+  // 用于记录操作
+  List<List<Cell>> redos;
   // 所有行、列、九宫格，便于引用与检查
   List<List<SudokuCellViewModel>> rows;
   List<List<SudokuCellViewModel>> cols;
   List<List<SudokuCellViewModel>> blocks;
-
   // 当前处于激活状态的cell
   // SudokuCellViewModel focusedCell;
   // SudokuCellViewModel hoveredCell;
@@ -26,14 +33,23 @@ class SudokuBoardViewModel {
   Set<SudokuCellViewModel> focusedCells = Set();
   // 当前需要显示为鼠标移过状态的cell们
   Set<SudokuCellViewModel> hoveredCells = Set();
+  // 当前显示为警告的cell们，之所以不用error是因为字母不对齐
+  // Set<SudokuCellViewModel> warningCells = Set();
+  // bool hasErrors = false;
 
   // 键盘的把柄，让你重画就重画
   GlobalKey<SudokuKeypadState> keypadKey;
+  // 键盘的输入模式，感觉放这不是个好主意
+  SudokuKeypadMode keypadMode = SudokuKeypadMode.Draft;
+
+  // TODO:寻找更好的实现方式
+  GlobalKey<ScaffoldState> scaffoldKey;
 
   // 构造函数
   SudokuBoardViewModel() {
-    cells =
-        List.generate(9 * 9, (_) => SudokuCellViewModel(this), growable: false);
+    cells = List<SudokuCellViewModel>.generate(
+        81, (_) => SudokuCellViewModel(this),
+        growable: false);
 
     // 方便UI处理
     rows = List(9);
@@ -53,6 +69,7 @@ class SudokuBoardViewModel {
         blocks[i][j].blockInBoard = i;
       }
     }
+
     // 生成数独的线程
     // TODO:后台生成一定数量的数独题目，比如最多10个，下一个题目可以随时读取
 
@@ -63,18 +80,25 @@ class SudokuBoardViewModel {
     // element.isFixed = Random().nextBool();
     //   element.isFixed = false;
     // });
+
     // FOR TEST ONLY
     // 随机生成10个数字，测试自动填充的功能
-    int n = 10;
-    raw = List.generate(81, (index) => Number_Invalid, growable: false);
-    while (n > 0) {
-      int x = Random().nextInt(81);
-      int v = Random().nextInt(9) + 1;
-      raw[x] = v;
-      cells[x].setNumber(v, true);
-      n--;
-    }
-    calAllCandidateNumber();
+    // int n = 10;
+    // raw = List.generate(81, (index) => Number_Invalid, growable: false);
+    // while (n > 0) {
+    //   int x = Random().nextInt(81);
+    //   int v = Random().nextInt(9) + 1;
+    //   raw[x] = v;
+    //   cells[x].filledNumber = v;
+    //   cells[x].isFixed = true;
+    //   n--;
+    // }
+
+    // FOR TEST ONLY
+    fromString(
+        '048503070060004100100090025700150302006007500802400006470080001009700040080302950');
+
+    if (PrefService.getBool('sudoku_autofill')) _calAllCandidateNumber();
   }
 
   // 依次生成数独题目的字符串，0表示
@@ -137,7 +161,8 @@ class SudokuBoardViewModel {
     }
     clearCells();
     for (int i = 0; i < 81; i++) {
-      cells[i].setNumber(newCells[i], newCells[i] != 0);
+      cells[i].filledNumber = newCells[i];
+      cells[i].isFixed = (newCells[i] != 0);
     }
     raw = newCells;
     return true;
@@ -178,7 +203,7 @@ class SudokuBoardViewModel {
   }
 
   // 求同一行、一列、一九宫格的单元格的集合
-  Set<SudokuCellViewModel> _calSameRowColBlockCell(SudokuCellViewModel cell) {
+  Set<SudokuCellViewModel> _calSameRowColBlockCells(SudokuCellViewModel cell) {
     Set<SudokuCellViewModel> ret = Set();
     ret.addAll(rows[cell.rowInBoard]);
     ret.addAll(cols[cell.colInBoard]);
@@ -189,14 +214,14 @@ class SudokuBoardViewModel {
   // 求含有同一数字的集合
   Set<SudokuCellViewModel> _calSameNumberCells(SudokuCellViewModel cell) {
     Set<SudokuCellViewModel> ret = Set();
-    if (cell.number is int)
+    if (cell.filledNumber != Number_Invalid)
       cells.forEach((element) {
-        if (element.number is int) {
-          if (element.number == cell.number) {
+        if (element.filledNumber != Number_Invalid) {
+          if (element.filledNumber == cell.filledNumber) {
             ret.add(element);
           }
         } else {
-          if ((element.number as List<int>).contains(cell.number)) {
+          if (element.listCandidateNumbers().contains(cell.filledNumber)) {
             ret.add(element);
           }
         }
@@ -208,9 +233,9 @@ class SudokuBoardViewModel {
   // 已知原来有的，求出和新的有关的，求交集，交集不用变，原有的-交集=需要告诉它们恢复原样
   // 新来的-交集=需要通知它们作出改变
   // 画个伟恩图就好，感觉是不是想多了我
-  void handleTap(SudokuCellViewModel cell) {
+  void handleCellTap(SudokuCellViewModel cell) {
     Set<SudokuCellViewModel> oldCells = focusedCells;
-    Set<SudokuCellViewModel> newCells = _calSameRowColBlockCell(cell);
+    Set<SudokuCellViewModel> newCells = _calSameRowColBlockCells(cell);
     newCells.addAll(_calSameNumberCells(cell));
     focusedCells = newCells;
 
@@ -225,9 +250,9 @@ class SudokuBoardViewModel {
   }
 
   // 同上，对鼠标移过的也算一算
-  void handleHover(SudokuCellViewModel cell) {
+  void handleCellHover(SudokuCellViewModel cell) {
     Set<SudokuCellViewModel> oldCells = hoveredCells;
-    Set<SudokuCellViewModel> newCells = _calSameRowColBlockCell(cell);
+    Set<SudokuCellViewModel> newCells = _calSameRowColBlockCells(cell);
 
     newCells.difference(oldCells).forEach((element) {
       element.notifyRefresh();
@@ -236,35 +261,150 @@ class SudokuBoardViewModel {
     hoveredCells = newCells;
   }
 
+  // 处理按下键盘时的事件
+  // 首先判断是否可以接受输入，
+  // 然后判断当前的输入模式，
+  // 如果是直接输入模式，设定数字值，检查当前影响的格子的行列宫中，是否存在可消除的候选数字
+  // 如果是草稿输入模式，设定/移除候选数字，移除候选数字时，如果候选数字唯一，根据设置使候选数字上屏
+  // 检查是否有错误数字，如果已经填满，检查是否正确，正确时弹窗处理
+  void handleKeypadTap(SudokuCellViewModel cell, int number) {
+    if (cell.isFixed) return;
+
+    // TODO: 记录
+
+    Set<SudokuCellViewModel> affect = Set();
+    Set<SudokuCellViewModel> oldErrors = _calErrorCells(cell);
+    if (keypadMode == SudokuKeypadMode.Fill) {
+      // Fill Mode
+      affect.addAll(setNumber(cell, number));
+    } else {
+      // Draft Mode
+      affect.addAll(toggleCandidateNumber(cell, number));
+    }
+    // 修改完以后，找到相关的错误
+    oldErrors.forEach((element) {
+      // if (element == cell) return;
+      Set<SudokuCellViewModel> tmp = _calErrorCells(element);
+      if (tmp.isEmpty) {
+        // 这就属于改正好的结果
+        element.isWrong = false;
+        affect.add(element);
+      } // 这些格子还有错误的其他情况，这里不管
+    });
+    Set<SudokuCellViewModel> newErrors = _calErrorCells(cell);
+    newErrors.forEach((element) {
+      element.isWrong = true;
+      affect.add(element);
+    });
+    affect.add(cell);
+
+    affect.forEach((element) {
+      element.notifyRefresh();
+    });
+    keypadKey.currentState.refresh();
+
+    // 检查是否符合要求
+    // 最后一次填写没有错误，且所有格子均已填写完毕，那么肯定是正确的
+    if (newErrors.isEmpty &&
+        (!cells.any((element) => element.filledNumber == Number_Invalid))) {
+      scaffoldKey.currentState.showSnackBar(SnackBar(
+        content: Text('Win!'),
+      ));
+    }
+  }
+
+  Set<SudokuCellViewModel> toggleCandidateNumber(
+      SudokuCellViewModel cell, int number) {
+    Set<SudokuCellViewModel> ret = Set();
+    bool old = cell.candidateNumbers[number - 1];
+
+    ret.addAll(old
+        ? removeCandidateNumber(cell, number)
+        : addCandidateNumber(cell, number));
+
+    return ret;
+  }
+
+  Set<SudokuCellViewModel> addCandidateNumber(
+      SudokuCellViewModel cell, int number) {
+    cell.candidateNumbers[number - 1] = true;
+    cell.filledNumber = Number_Invalid;
+    return Set()..add(cell);
+  }
+
+  Set<SudokuCellViewModel> removeCandidateNumber(
+      SudokuCellViewModel cell, int number) {
+    Set<SudokuCellViewModel> ret = Set();
+    if (cell.candidateNumbers[number - 1]) {
+      cell.candidateNumbers[number - 1] = false;
+      ret.add(cell);
+      if (cell.filledNumber == number) {
+        cell.filledNumber = Number_Invalid;
+      } else {
+        List<int> tmp = cell.listCandidateNumbers();
+        if (PrefService.getBool('sudoku_autonumber') && tmp.length == 1) {
+          ret.addAll(setNumber(cell, tmp[0]));
+        } else {
+          cell.filledNumber = Number_Invalid;
+        }
+      }
+    }
+    return ret;
+  }
+
+  Set<SudokuCellViewModel> setNumber(SudokuCellViewModel cell, int number) {
+    Set<SudokuCellViewModel> ret = Set();
+    for (int i = 0; i < 9; i++) {
+      cell.candidateNumbers[i] = (i == (number - 1));
+    }
+    cell.filledNumber = number;
+
+    // 设定数字之后，需要清除同行同列同宫中的候选数字
+    Set<SudokuCellViewModel> tmp = _calSameRowColBlockCells(cell);
+    tmp.forEach((element) {
+      if ((!element.isFixed) && element.filledNumber == Number_Invalid) {
+        ret.addAll(removeCandidateNumber(element, number));
+      }
+    });
+    return ret;
+  }
+
   // 清空内容
   void clearCells() {
     cells.forEach((element) {
-      element.setNumber(Number_Invalid, false);
+      element.candidateNumbers.forEach((element1) {
+        element1 = false;
+      });
+      element.isFixed = false;
+      element.filledNumber = Number_Invalid;
     });
   }
 
   // 计算候选数字，有且仅有在数独开始时使用
   // 直接操作内部数组
   // 这个时候number肯定只有固定的数字
-  void calAllCandidateNumber() {
+  void _calAllCandidateNumber() {
     List<List<bool>> r = List.generate(
         9,
         (i) => List.generate(
             9,
             (j) => rows[i].any((element) =>
-                (element.number is int && element.number == j + 1))));
+                (element.filledNumber != Number_Invalid &&
+                    element.filledNumber == j + 1))));
     List<List<bool>> c = List.generate(
         9,
         (i) => List.generate(
             9,
             (j) => cols[i].any((element) =>
-                (element.number is int && element.number == j + 1))));
+                (element.filledNumber != Number_Invalid &&
+                    element.filledNumber == j + 1))));
     List<List<bool>> b = List.generate(
         9,
         (i) => List.generate(
             9,
             (j) => blocks[i].any((element) =>
-                (element.number is int && element.number == j + 1))));
+                (element.filledNumber != Number_Invalid &&
+                    element.filledNumber == j + 1))));
     cells.forEach((element) {
       if (!element.isFixed) {
         // 依次判断这个格子是否能填1-9
@@ -276,5 +416,35 @@ class SudokuBoardViewModel {
           }
       }
     });
+  }
+
+  // 找到与cell冲突的格子
+  Set<SudokuCellViewModel> _calErrorCells(SudokuCellViewModel cell) {
+    Set<SudokuCellViewModel> tmp = _calSameRowColBlockCells(cell);
+    Set<SudokuCellViewModel> ret = Set();
+    if (cell.filledNumber != Number_Invalid) {
+      tmp.forEach((element) {
+        if (element == cell) return;
+        if (element.filledNumber != Number_Invalid) {
+          if (element.filledNumber == cell.filledNumber) {
+            ret.add(element);
+          }
+        } else {
+          if (element.listCandidateNumbers().contains(cell.filledNumber)) {
+            ret.add(element);
+          }
+        }
+      });
+    } else {
+      tmp.forEach((element) {
+        if (element == cell) return;
+        if (element.filledNumber != Number_Invalid) {
+          if (cell.listCandidateNumbers().contains(element.filledNumber))
+            ret.add(element);
+        }
+      });
+    }
+    if (ret.isNotEmpty) ret.add(cell);
+    return ret;
   }
 }

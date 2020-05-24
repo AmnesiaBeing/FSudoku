@@ -8,9 +8,9 @@ import 'package:fsudoku/widget/widgetToggleIconButton.dart';
 const double AppBarHeight = 48;
 
 class SudokuPage extends StatelessWidget {
-  final SudokuBoardViewModel _board = SudokuBoardViewModel();
-
   final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
+
+  final SudokuBoardViewModel _board = SudokuBoardViewModel();
 
   // 标题栏，当没有工具栏的时候，标题栏右上角给一个三点按钮，显示下拉菜单
   Widget _buildAppBar(BuildContext context, String title) {
@@ -85,7 +85,14 @@ class SudokuPage extends StatelessWidget {
             cellWidth: cellWidth,
             textScaleFactor: textScaleFactor,
           ),
-          IconButton(icon: Icon(Icons.bubble_chart), onPressed: _handleSolve),
+          ToggleIconButton(
+            iconT: Icon(Icons.palette),
+            iconF: Icon(Icons.edit),
+            onPressed: (bool tf) {
+              _board.keypadMode =
+                  tf ? SudokuKeypadMode.Fill : SudokuKeypadMode.Draft;
+            },
+          ),
           ToggleIconButton(
             iconT: Icon(Icons.file_upload),
             iconF: Icon(Icons.file_download),
@@ -95,7 +102,7 @@ class SudokuPage extends StatelessWidget {
           ),
         ]));
       } else if (size.height >= size.width + AppBarHeight + cellWidth) {
-        // 屏幕还行，键盘呈一行放置
+        // TODO:屏幕还行，键盘呈一行放置
         mainWidgets.add(SudokuKeypad(
           board: _board,
           cellWidth: cellWidth,
@@ -110,7 +117,7 @@ class SudokuPage extends StatelessWidget {
           IconButton(icon: Icon(Icons.file_download), onPressed: _handleLoad)
         ]));
       } else {
-        // 屏幕很短，键盘悬浮显示（这个时候还是竖屏么？）
+        // TODO:屏幕很短，键盘悬浮显示（这个时候还是竖屏么？）
 
       }
 
@@ -119,7 +126,7 @@ class SudokuPage extends StatelessWidget {
         children: mainWidgets,
       );
     } else {
-      // 横屏先不做了
+      // TODO:横屏
       // // 横屏，要减掉一个标题栏的高度（手机上隐藏标题栏？）
       // cellWidth = (shortestSide - AppBarHeight) / 9 - 2;
       // if (size.width >= size.height + 9 * cellWidth) {
@@ -132,6 +139,8 @@ class SudokuPage extends StatelessWidget {
       // }
     }
 
+    _board.scaffoldKey = _scaffoldKey;
+
     return Scaffold(
         key: _scaffoldKey,
         // 标题栏，俩按钮
@@ -140,13 +149,13 @@ class SudokuPage extends StatelessWidget {
         body: main);
   }
 
-  final SnackBar sb = SnackBar(
-    content: Text('Content has already copied to clipboard.'),
-  );
+  void _showSnackBar(String msg) {
+    _scaffoldKey.currentState.showSnackBar(SnackBar(content: Text(msg)));
+  }
 
   void _handleShare(BuildContext context) {
     Clipboard.setData(ClipboardData(text: _board.toString()));
-    _scaffoldKey.currentState.showSnackBar(sb);
+    _showSnackBar('Content has already copied to clipboard.');
   }
 
   void _handleSave() {}
@@ -158,4 +167,8 @@ class SudokuPage extends StatelessWidget {
   void _handleSolve() {}
 
   void _handleRedo() {}
+
+  void win() {
+    _showSnackBar('You Win!');
+  }
 }

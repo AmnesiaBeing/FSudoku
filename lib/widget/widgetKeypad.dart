@@ -51,10 +51,8 @@ class SudokuKeypadState extends State<SudokuKeypad> {
                     color: v ? Colors.white : Colors.black, fontSize: 20),
               )),
               onTap: () {
-                // if (widget.focusedCell != null && !widget.focusedCell.isFixed) {
-                // widget.focusedCell.toggleCandidateNumber(cur);
-                // }
-                // widget.onFocusedCellChanged(widget.focusedCell);
+                if (_focusedCell != null)
+                  widget.board.handleKeypadTap(_focusedCell, cur);
               }),
         ));
       }
@@ -79,15 +77,19 @@ class SudokuKeypadState extends State<SudokuKeypad> {
         ));
   }
 
+  bool _isCellContainsNumber(int number) {
+    return (_focusedCell != null) &&
+        (_focusedCell.candidateNumbers[number - 1] ||
+            _focusedCell.filledNumber == number);
+  }
+
   void setFocusedCell(SudokuCellViewModel cell) {
     setState(() {
       _focusedCell = cell;
     });
   }
 
-  bool _isCellContainsNumber(int number) {
-    return (_focusedCell != null) &&
-        (_focusedCell.candidateNumbers[number - 1] ||
-            _focusedCell.number == number);
+  void refresh() {
+    setState(() {});
   }
 }

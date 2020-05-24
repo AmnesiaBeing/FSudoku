@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fsudoku/model/modelSudokuBoard.dart';
 import 'package:fsudoku/model/modelSudokuCell.dart';
+import 'package:fsudoku/ui/colors.dart';
 
 class SudokuCell extends StatefulWidget {
   SudokuCell(
@@ -35,13 +36,15 @@ class SudokuCellState extends State<SudokuCell> {
       child: InkWell(
         child: Center(
             // 三种情况的没有确定数字和有确定数字的也不一样
-            child: (widget.cell.isFixed || widget.cell.number is int)
+            child: (widget.cell.isFixed ||
+                    widget.cell.filledNumber != Number_Invalid)
                 ? Text(
-                    widget.cell.number.toString(),
+                    widget.cell.filledNumber.toString(),
                     textScaleFactor: widget.textScaleFactor,
                     style: TextStyle(color: Colors.black, fontSize: 20),
                   )
-                : _buildSudokuCellCandidate(context, widget.cell.number)),
+                : _buildSudokuCellCandidate(
+                    context, widget.cell.listCandidateNumbers())),
         onTap: _handleTap,
         onHover: _handleHover,
       ),
@@ -71,17 +74,14 @@ class SudokuCellState extends State<SudokuCell> {
 
   Color _getCellBackgroundColor(BuildContext context) {
     // 根据不同的类型有不同的颜色
-    Color ret = widget.cell.isFixed
-        ? Theme.of(context).disabledColor
-        // : (widget.cell.numbers.length == 1)
-        //     ? Theme.of(context).toggleableActiveColor
-        : Colors.white;
+    Color ret =
+        widget.cell.isFixed ? CellBgWithFixedNumber : CellBgWithoutFixedNumber;
 
-    if (_isInFocusedRange()) return Theme.of(context).disabledColor;
-    // ret = Color.alphaBlend(Colors.blue, ret);
+    if (_isInWarningRange()) ret = Color.alphaBlend(CellBgWarning, ret);
 
-    if (_isInHoverRange())
-      ret = Color.alphaBlend(Theme.of(context).hoverColor, ret);
+    if (_isInFocusedRange()) ret = Color.alphaBlend(CellBgFocused, ret);
+
+    if (_isInHoveredRange()) ret = Color.alphaBlend(CellBgHovered, ret);
 
     return ret;
   }
@@ -99,8 +99,12 @@ class SudokuCellState extends State<SudokuCell> {
     return widget.board.focusedCells.contains(widget.cell);
   }
 
-  bool _isInHoverRange() {
+  bool _isInHoveredRange() {
     return widget.board.hoveredCells.contains(widget.cell);
+  }
+
+  bool _isInWarningRange() {
+    return widget.cell.isWrong;
   }
 
   void refresh() {
