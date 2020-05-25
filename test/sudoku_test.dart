@@ -1,4 +1,4 @@
-import 'package:fsudoku/model/sudokuMethod.dart';
+import 'package:fsudoku/model/modelSudokuMethod.dart';
 
 void main() {
   List<List<int>> field = List.generate(
@@ -16,6 +16,10 @@ void main() {
   while (!ret) {
     clearFRCB(field, rows, cols, blocks);
     ret = lasVegas(field, rows, cols, blocks, 11);
+  }
+
+  for (int i = 0; i < 9; i++) {
+    print("${field[i]} ");
   }
 
   digSudoku(field, rows, cols, blocks, 30);

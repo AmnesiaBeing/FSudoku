@@ -63,11 +63,18 @@ class SudokuCellState extends State<SudokuCell> {
                 mainAxisSize: MainAxisSize.max,
                 children: List<Widget>.generate(3, (j) {
                   int c = i * 3 + j + 1;
-                  return Center(
-                      child: Text(
-                    candidateNumber.contains(c) ? c.toString() : ' ',
-                    style: TextStyle(color: Colors.black, fontSize: 10),
-                  ));
+                  return Container(
+                      color: (widget.board.curNumber != Number_Invalid &&
+                              widget.board.curNumber == c &&
+                              widget.cell
+                                  .candidateNumbers[widget.board.curNumber - 1])
+                          ? CellBgSameNumber
+                          : Colors.transparent,
+                      child: Center(
+                          child: Text(
+                        candidateNumber.contains(c) ? c.toString() : ' ',
+                        style: TextStyle(color: Colors.black, fontSize: 10),
+                      )));
                 }, growable: false)),
             growable: false));
   }
@@ -80,6 +87,10 @@ class SudokuCellState extends State<SudokuCell> {
     if (_isInWarningRange()) ret = Color.alphaBlend(CellBgWarning, ret);
 
     if (_isInFocusedRange()) ret = Color.alphaBlend(CellBgFocused, ret);
+
+    if (widget.board.sameNumberCells.contains(widget.cell) &&
+        widget.cell.filledNumber != Number_Invalid)
+      ret = Color.alphaBlend(CellBgSameNumber, ret);
 
     if (_isInHoveredRange()) ret = Color.alphaBlend(CellBgHovered, ret);
 

@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:fsudoku/model/modelSudokuCell.dart';
+import 'package:fsudoku/model/modelSudokuMethod.dart';
 import 'package:fsudoku/widget/widgetKeypad.dart';
 import 'package:preferences/preferences.dart';
 
@@ -10,8 +11,14 @@ enum SudokuKeypadMode {
   /* 直接填写一个数字 */ Fill,
 }
 
-// 所有数据都在这里啦
+// 难度级别，这里只是代表题目出来后，有多少个数字
+const Difficult_Easy = 32;
+const Difficult_Hard = 25;
+const Difficult_VeryHard = 21;
+const Difficult_VeryVeryHard = 16;
+const Difficult_Default = Difficult_Hard;
 
+// 所有数据都在这里啦
 class SudokuBoardViewModel {
   List<SudokuCellViewModel> cells;
   // 据了解，dart里一切皆对象，（可以理解为指针？）
@@ -31,6 +38,9 @@ class SudokuBoardViewModel {
   // SudokuCellViewModel hoveredCell;
   // 当前需要显示激活状态的cell们
   Set<SudokuCellViewModel> focusedCells = Set();
+  // 含有相同数字的cell们
+  Set<SudokuCellViewModel> sameNumberCells = Set();
+  int curNumber = Number_Invalid;
   // 当前需要显示为鼠标移过状态的cell们
   Set<SudokuCellViewModel> hoveredCells = Set();
   // 当前显示为警告的cell们，之所以不用error是因为字母不对齐
@@ -95,10 +105,10 @@ class SudokuBoardViewModel {
     // }
 
     // FOR TEST ONLY
-    fromString(
-        '048503070060004100100090025700150302006007500802400006470080001009700040080302950');
+    // fromString(
+    //     '048503070060004100100090025700150302006007500802400006470080001009700040080302950');
 
-    if (PrefService.getBool('sudoku_autofill')) _calAllCandidateNumber();
+    newModel(Difficult_Default);
   }
 
   // 依次生成数独题目的字符串，0表示
@@ -169,37 +179,36 @@ class SudokuBoardViewModel {
   }
 
   // 生成一个新题的接口，level代表有多少个已知数
-  Future<dynamic> newModel(int level) {
-    // return compute((){},);
+  void newModel(int level) {
+    List<List<int>> field = List.generate(
+        9, (index) => List.generate(9, (index) => 0, growable: false),
+        growable: false);
+    List<List<bool>> rows =
+        List.generate(9, (index) => List.generate(9, (index) => false));
+    List<List<bool>> cols =
+        List.generate(9, (index) => List.generate(9, (index) => false));
+    List<List<bool>> blocks =
+        List.generate(9, (index) => List.generate(9, (index) => false));
 
-    // List<List<int>> field = List.filled(
-    //     9, List.filled(9, Number_Invalid, growable: false),
-    //     growable: false);
-    // List<List<bool>> rows =
-    //     List.filled(9, List.filled(9, false, growable: false), growable: false);
-    // List<List<bool>> cols =
-    //     List.filled(9, List.filled(9, false, growable: false), growable: false);
-    // List<List<bool>> blocks =
-    //     List.filled(9, List.filled(9, false, growable: false), growable: false);
+    bool ret = false;
 
-    // bool ret = false;
+    while (!ret) {
+      clearFRCB(field, rows, cols, blocks);
+      ret = lasVegas(field, rows, cols, blocks, 11);
+    }
 
-    // while (!ret) {
-    //   clearFRCB(field, rows, cols, blocks);
-    //   ret = lasVegas(field, rows, cols, blocks, 11);
-    // }
+    digSudoku(field, rows, cols, blocks, level);
 
-    // digSudoku(field, rows, cols, blocks, level);
+    for (int i = 0; i < 9; i++) {
+      for (int j = 0; j < 9; j++) {
+        int v = field[i][j];
+        cells[i * 9 + j].isWrong = false;
+        cells[i * 9 + j].isFixed = (v != Number_Invalid);
+        cells[i * 9 + j].filledNumber = v;
+      }
+    }
 
-    // for (int i = 0; i < 9; i++) {
-    //   for (int j = 0; j < 9; j++) {
-    //     int v = field[i][j];
-    //     cells[i * 9 + j] =
-    //         v == 0 ? Cell() : Cell.fromNumber(number: v, isFixed: true);
-    //   }
-    // }
-
-    // initState();
+    if (PrefService.getBool('sudoku_autofill')) _calAllCandidateNumber();
   }
 
   // 求同一行、一列、一九宫格的单元格的集合
@@ -229,22 +238,32 @@ class SudokuBoardViewModel {
     return ret;
   }
 
+  void _refreshAllCell() {
+    cells.forEach((element) {
+      element.notifyRefresh();
+    });
+  }
+
   // 处理单元格按下事件
   // 已知原来有的，求出和新的有关的，求交集，交集不用变，原有的-交集=需要告诉它们恢复原样
   // 新来的-交集=需要通知它们作出改变
   // 画个伟恩图就好，感觉是不是想多了我
   void handleCellTap(SudokuCellViewModel cell) {
-    Set<SudokuCellViewModel> oldCells = focusedCells;
-    Set<SudokuCellViewModel> newCells = _calSameRowColBlockCells(cell);
-    newCells.addAll(_calSameNumberCells(cell));
-    focusedCells = newCells;
+    // Set<SudokuCellViewModel> oldCells = focusedCells;
+    // Set<SudokuCellViewModel> newCells1 = _calSameRowColBlockCells(cell);
+    // Set<SudokuCellViewModel> newCells2 = _calSameNumberCells(cell);
+    // focusedCells = newCells1;
+    // sameNumberCells = newCells2;
 
-    Set<SudokuCellViewModel> tmp1 = newCells.union(oldCells);
-    Set<SudokuCellViewModel> tmp2 = newCells.intersection(oldCells);
-    Set<SudokuCellViewModel> tmp3 = tmp1.difference(tmp2);
-    tmp3.forEach((element) {
-      element.notifyRefresh();
-    });
+    focusedCells = _calSameRowColBlockCells(cell);
+    sameNumberCells = _calSameNumberCells(cell);
+    curNumber = cell.filledNumber;
+
+    _refreshAllCell();
+
+    // tmp3.forEach((element) {
+    //   element.notifyRefresh();
+    // });
 
     keypadKey.currentState.setFocusedCell(cell);
   }

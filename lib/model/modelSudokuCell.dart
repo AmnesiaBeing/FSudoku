@@ -6,13 +6,6 @@ import 'package:fsudoku/widget/widgetCell.dart';
 const Index_Invalid = -1;
 const Number_Invalid = 0;
 
-// 难度级别，这里只是代表题目出来后，有多少个数字
-const Difficult_Easy = 32;
-const Difficult_Hard = 25;
-const Difficult_VeryHard = 19;
-const Difficult_VeryVeryHard = 16;
-const Difficult_Default = Difficult_VeryVeryHard;
-
 class Cell {
   // 单元格是否是已知数
   bool isFixed = false;
