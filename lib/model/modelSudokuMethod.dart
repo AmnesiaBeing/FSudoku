@@ -1,5 +1,7 @@
 import 'dart:math';
 
+// TODO: Dart传递参数是传递“地址”，即下面这个dfs函数没啥作用，趁此机会，把这一部分代码修改成别的语言吧。
+
 // 网上抄的生成/解数独的代码
 
 // 这个函数用剪枝法解一个数独矩阵field，（0为空，1-9表示所填数字），
@@ -32,7 +34,6 @@ bool dfs(List<List<int>> field, List<List<bool>> rows, List<List<bool>> cols,
 
 // 用拉斯维加斯算法生成数独，向空矩阵中随机填写n个数字（一般是11）
 // 然后用剪枝法解这个数独（据说有99%的概率可以解出来）
-// TODO：用剪枝法解数独时，左上角第一个数字可能每次都是1？
 bool lasVegas(List<List<int>> field, List<List<bool>> rows,
     List<List<bool>> cols, List<List<bool>> blocks, int n) {
   Random rnd = Random();

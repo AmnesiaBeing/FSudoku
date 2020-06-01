@@ -8,14 +8,14 @@ enum SudokuKeypadStyle { Vertical, Horizontal, Block }
 class SudokuKeypad extends StatefulWidget {
   final SudokuBoardViewModel board;
 
-  final double cellWidth;
+  final int cellWidth;
   final double textScaleFactor;
 
   final Key key;
 
   SudokuKeypad(
       {this.key,
-      this.cellWidth = 32,
+      this.cellWidth = 33,
       this.textScaleFactor = 1,
       @required this.board}) {
     board.keypadKey = this.key;
@@ -39,8 +39,8 @@ class SudokuKeypadState extends State<SudokuKeypad> {
         bool v = _isCellContainsNumber(cur);
         lr.add(Container(
           margin: EdgeInsets.all(1),
-          width: widget.cellWidth,
-          height: widget.cellWidth,
+          width: widget.cellWidth * 1.0,
+          height: widget.cellWidth * 1.0,
           color: v ? Colors.black : Colors.white,
           child: InkWell(
               child: Center(

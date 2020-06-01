@@ -45,8 +45,8 @@ class SudokuPage extends StatelessWidget {
     // 获取窗口大小
     Size size = MediaQuery.of(context).size;
     double shortestSide = size.shortestSide;
-    // 每个格子的宽度
-    double cellWidth = 32;
+    // 每个格子的宽度，宽度要求是3的倍数
+    int cellWidth = 33;
     // 宽屏时考虑文字缩放
     double textScaleFactor = 1;
     // 是否有标题栏
@@ -59,7 +59,7 @@ class SudokuPage extends StatelessWidget {
     // 判断方向
     if (size.height > size.width) {
       //竖屏
-      cellWidth = shortestSide / 9 - 1;
+      cellWidth = (shortestSide - 16) ~/ 27 * 3;
 
       // 这个啥情况下都得有
       mainWidgets.add(Spacer());
@@ -128,15 +128,31 @@ class SudokuPage extends StatelessWidget {
     } else {
       // TODO:横屏
       // // 横屏，要减掉一个标题栏的高度（手机上隐藏标题栏？）
-      // cellWidth = (shortestSide - AppBarHeight) / 9 - 2;
-      // if (size.width >= size.height + 9 * cellWidth) {
-      //   // 超级长，缩略图安排上
+      cellWidth = (shortestSide - AppBarHeight - 6) ~/ 27 * 3;
 
-      // } else if (size.width >= size.height + 2 * cellWidth) {
-      //   // 还能接受，键盘呈一列放置
-      // } else {
-      //   // 正方形了吧，键盘悬浮显示
-      // }
+      if (size.width >= size.height + 9 * cellWidth) {
+        // 超级长，缩略图安排上
+
+      } else if (size.width >= size.height + 2 * cellWidth) {
+        // 还能接受，键盘呈一列放置
+      } else {
+        // 正方形了吧，键盘悬浮显示
+      }
+
+      // 这个啥情况下都得有
+      mainWidgets.add(Spacer());
+      mainWidgets.add(Center(
+          child: SudokuBoard(
+        board: _board,
+        cellWidth: cellWidth,
+        textScaleFactor: textScaleFactor,
+      )));
+      mainWidgets.add(Spacer());
+
+      main = Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: mainWidgets,
+      );
     }
 
     _board.scaffoldKey = _scaffoldKey;

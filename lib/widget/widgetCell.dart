@@ -7,7 +7,7 @@ class SudokuCell extends StatefulWidget {
   SudokuCell(
     this.key, {
     @required this.cell,
-    this.cellWidth = 32,
+    this.cellWidth = 33,
     this.textScaleFactor = 1,
     @required this.board,
   }) {
@@ -17,7 +17,7 @@ class SudokuCell extends StatefulWidget {
   final Key key;
   final SudokuBoardViewModel board;
   final SudokuCellViewModel cell;
-  final double cellWidth;
+  final int cellWidth;
   final double textScaleFactor;
 
   @override
@@ -28,8 +28,8 @@ class SudokuCellState extends State<SudokuCell> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: widget.cellWidth,
-      height: widget.cellWidth,
+      width: widget.cellWidth * 1.0,
+      height: widget.cellWidth * 1.0,
       decoration: BoxDecoration(
           border: Border.all(width: 1),
           color: _getCellBackgroundColor(context)),
@@ -52,7 +52,8 @@ class SudokuCellState extends State<SudokuCell> {
   }
 
   // 单元格内的候选数字
-  Widget _buildSudokuCellCandidate(BuildContext context, List candidateNumber) {
+  Widget _buildSudokuCellCandidate(
+      BuildContext context, List<int> candidateNumber) {
     return Column(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         mainAxisSize: MainAxisSize.max,
@@ -64,17 +65,21 @@ class SudokuCellState extends State<SudokuCell> {
                 children: List<Widget>.generate(3, (j) {
                   int c = i * 3 + j + 1;
                   return Container(
+                      width: (widget.cellWidth - 2) / 3,
+                      height: (widget.cellWidth - 2) / 3,
                       color: (widget.board.curNumber != Number_Invalid &&
                               widget.board.curNumber == c &&
                               widget.cell
                                   .candidateNumbers[widget.board.curNumber - 1])
                           ? CellBgSameNumber
                           : Colors.transparent,
-                      child: Center(
-                          child: Text(
-                        candidateNumber.contains(c) ? c.toString() : ' ',
-                        style: TextStyle(color: Colors.black, fontSize: 10),
-                      )));
+                      child: Offstage(
+                          offstage: !candidateNumber.contains(c),
+                          child: Center(
+                              child: Text(
+                            c.toString(),
+                            style: TextStyle(color: Colors.black, fontSize: 10),
+                          ))));
                 }, growable: false)),
             growable: false));
   }
@@ -86,6 +91,8 @@ class SudokuCellState extends State<SudokuCell> {
 
     if (_isInWarningRange()) ret = Color.alphaBlend(CellBgWarning, ret);
 
+    if (widget.board.focusedCell == widget.cell)
+      ret = Color.alphaBlend(CellBgFocused.withAlpha(255), ret);
     if (_isInFocusedRange()) ret = Color.alphaBlend(CellBgFocused, ret);
 
     if (widget.board.sameNumberCells.contains(widget.cell) &&

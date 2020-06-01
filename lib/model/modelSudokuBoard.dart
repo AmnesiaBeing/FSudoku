@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:fsudoku/model/modelSudokuCell.dart';
 import 'package:fsudoku/model/modelSudokuMethod.dart';
@@ -34,7 +32,7 @@ class SudokuBoardViewModel {
   List<List<SudokuCellViewModel>> cols;
   List<List<SudokuCellViewModel>> blocks;
   // 当前处于激活状态的cell
-  // SudokuCellViewModel focusedCell;
+  SudokuCellViewModel focusedCell;
   // SudokuCellViewModel hoveredCell;
   // 当前需要显示激活状态的cell们
   Set<SudokuCellViewModel> focusedCells = Set();
@@ -190,11 +188,8 @@ class SudokuBoardViewModel {
     List<List<bool>> blocks =
         List.generate(9, (index) => List.generate(9, (index) => false));
 
-    bool ret = false;
-
-    while (!ret) {
+    while (!lasVegas(field, rows, cols, blocks, 11)) {
       clearFRCB(field, rows, cols, blocks);
-      ret = lasVegas(field, rows, cols, blocks, 11);
     }
 
     digSudoku(field, rows, cols, blocks, level);
@@ -255,6 +250,7 @@ class SudokuBoardViewModel {
     // focusedCells = newCells1;
     // sameNumberCells = newCells2;
 
+    focusedCell = cell;
     focusedCells = _calSameRowColBlockCells(cell);
     sameNumberCells = _calSameNumberCells(cell);
     curNumber = cell.filledNumber;
@@ -265,7 +261,7 @@ class SudokuBoardViewModel {
     //   element.notifyRefresh();
     // });
 
-    keypadKey.currentState.setFocusedCell(cell);
+    keypadKey?.currentState?.setFocusedCell(cell);
   }
 
   // 同上，对鼠标移过的也算一算
@@ -273,11 +269,11 @@ class SudokuBoardViewModel {
     Set<SudokuCellViewModel> oldCells = hoveredCells;
     Set<SudokuCellViewModel> newCells = _calSameRowColBlockCells(cell);
 
-    newCells.difference(oldCells).forEach((element) {
+    hoveredCells = newCells;
+
+    newCells.union(oldCells).forEach((element) {
       element.notifyRefresh();
     });
-
-    hoveredCells = newCells;
   }
 
   // 处理按下键盘时的事件
@@ -321,6 +317,8 @@ class SudokuBoardViewModel {
       element.notifyRefresh();
     });
     keypadKey.currentState.refresh();
+
+    handleCellTap(cell);
 
     // 检查是否符合要求
     // 最后一次填写没有错误，且所有格子均已填写完毕，那么肯定是正确的

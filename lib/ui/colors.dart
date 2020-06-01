@@ -6,4 +6,4 @@ final Color CellBgWithoutFixedNumber = Colors.white;
 final Color CellBgFocused = Colors.yellow.withAlpha(100);
 final Color CellBgSameNumber = Colors.blue.withAlpha(100);
 final Color CellBgHovered = Colors.green.withAlpha(100);
-final Color CellBgWarning = Colors.red.withAlpha(100);
+final Color CellBgWarning = Colors.red;

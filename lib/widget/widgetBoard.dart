@@ -3,18 +3,23 @@ import 'package:fsudoku/model/modelSudokuBoard.dart';
 
 import 'widgetCell.dart';
 
-class SudokuBoard extends StatelessWidget {
-  final double cellWidth;
+class SudokuBoard extends StatefulWidget {
+  final int cellWidth;
   final double textScaleFactor;
   final SudokuBoardViewModel board;
 
   SudokuBoard(
       {Key key,
-      this.cellWidth = 32,
+      this.cellWidth = 33,
       this.textScaleFactor = 1,
       @required this.board})
       : super(key: key);
 
+  @override
+  State<StatefulWidget> createState() => SudokuBoardState();
+}
+
+class SudokuBoardState extends State<SudokuBoard> {
   // 单元格的颜色由基础颜色与动画颜色混合而成
   @override
   Widget build(BuildContext context) {
@@ -46,9 +51,9 @@ class SudokuBoard extends StatelessWidget {
                                         int index = i * 27 + k * 9 + j * 3 + l;
                                         return SudokuCell(
                                           GlobalKey<SudokuCellState>(),
-                                          board: board,
-                                          cell: board.cells[index],
-                                          cellWidth: cellWidth,
+                                          board: widget.board,
+                                          cell: widget.board.cells[index],
+                                          cellWidth: widget.cellWidth,
                                         );
                                       }, growable: false),
                                     ),
